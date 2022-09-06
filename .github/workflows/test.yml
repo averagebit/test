@@ -1,0 +1,37 @@
+name: Test
+
+on:
+  push:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
+      - name: Dump job context
+        env:
+          JOB_CONTEXT: ${{ toJson(job) }}
+        run: echo "$JOB_CONTEXT"
+
+      - name: script
+        uses: actions/github-script@v6
+        id: job-url
+        with:
+          script: |
+            const { data } = await github.rest.actions.listJobsForWorkflowRunAttempt({
+              ...context.repo,
+              run_id: context.runId,
+              attempt_number: process.env.GITHUB_RUN_ATTEMPT,
+            });
+
+            return data.jobs[0].html_url
+          result-encoding: string
+      - name: Print Log URL
+        run: |
+          echo "Log URL: ${{ steps.job-url.outputs.result }}"
